@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="de.jschmucker.bmon.MainActivity"
+    android:background="@android:color/holo_blue_bright">
+
+    <de.jschmucker.bmon.MjpegView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_centerInParent="true"
+        android:id="@+id/mjpeg_view" />
+
+    <RelativeLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true">
+
+        <TextView
+            android:id="@+id/labelTemp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Temp: "
+            android:textAppearance="@style/TextAppearance.AppCompat.Headline"
+            android:textColor="@android:color/white"
+            android:layout_alignParentTop="true"
+            android:layout_alignParentStart="true" />
+
+        <TextView
+            android:id="@+id/textViewTemp"
+            android:layout_width="50dp"
+            android:layout_height="wrap_content"
+            android:text="\?"
+            android:textAlignment="textEnd"
+            android:textAppearance="@style/TextAppearance.AppCompat.Headline"
+            android:textColor="@android:color/white"
+            android:layout_alignBottom="@id/labelTemp"
+            android:layout_toEndOf="@id/labelTemp" />
+
+        <TextView
+            android:id="@+id/tempUnit"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignBaseline="@+id/textViewTemp"
+            android:layout_alignBottom="@+id/textViewTemp"
+            android:layout_toEndOf="@+id/textViewTemp"
+            android:text="°C, "
+            android:textAppearance="@style/TextAppearance.AppCompat.Headline"
+            android:textColor="@android:color/white" />
+
+        <TextView
+            android:id="@+id/labelHumidity"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Humid: "
+            android:textAppearance="@style/TextAppearance.AppCompat.Headline"
+            android:textColor="@android:color/white"
+            android:layout_alignParentTop="true"
+            android:layout_toEndOf="@+id/tempUnit" />
+
+        <TextView
+            android:id="@+id/textViewHumidity"
+            android:layout_width="50dp"
+            android:layout_height="wrap_content"
+            android:text="\?"
+            android:textAlignment="textEnd"
+            android:textAppearance="@style/TextAppearance.AppCompat.Headline"
+            android:textColor="@android:color/white"
+            android:layout_alignParentTop="true"
+            android:layout_toEndOf="@id/labelHumidity" />
+
+        <TextView
+            android:id="@+id/humidityUnit"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="%"
+            android:textAppearance="@style/TextAppearance.AppCompat.Headline"
+            android:textColor="@android:color/white"
+            android:layout_alignParentTop="true"
+            android:layout_toEndOf="@+id/textViewHumidity" />
+
+    </RelativeLayout>
+
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/offButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="26dp"
+        android:clickable="true"
+        android:src="@android:drawable/ic_lock_power_off"
+        android:tint="#000000"
+        app:backgroundTint="#ff0000"
+        app:fabSize="auto"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true" />
+
+</RelativeLayout>
