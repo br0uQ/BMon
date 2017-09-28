@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">BMon</string>
+    <string name="error_dialog_title">Fehler</string>
+    <string name="error_audio_connection">Konnte keine Verbindung zum Audiostream herstellen.</string>
 </resources>

@@ -1,16 +1,21 @@
 package de.jschmucker.bmon;
 
 import android.app.Activity;
+import android.app.Dialog;
+import android.content.DialogInterface;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Handler;
+import android.os.Message;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.content.ContextCompat;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.VideoView;
 
@@ -40,20 +45,23 @@ import java.util.Observer;
 
 public class MainActivity extends Activity {
 
-    private final String videoUrl = "http://bmonpi:8090/";
+    /* Audio */
     private final String audioUrl = "http://bmonpi:8000/raspi";
-
-
-    private static final String PORT = "48800";
-    private static final String HOST = "bmonpi";
-    //private TcpClient tcpClient = null;
-    private UdpBroadcastReceiver broadcastReceiver;
-
     private SimpleExoPlayer player;
+    private AudioPlayerEventListener eventListener;
     private MediaSource audioSource;
+
+    /* Video */
+    private final String videoUrl = "http://bmonpi:8090/";
     private MjpegView mjpegView;
+
+    /* Temperatur and Humidity Receiver */
+    private UdpBroadcastReceiver broadcastReceiver;
+    private RelativeLayout tempHumidLayout;
     private TextView textViewTemp;
     private TextView textViewHumidity;
+    private static final String PORT = "54545";
+    private static final String HOST = "bmonpi";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -62,15 +70,17 @@ public class MainActivity extends Activity {
 
         Window window = getWindow();
         window.setStatusBarColor(Color.BLACK);
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         textViewHumidity = (TextView) findViewById(R.id.textViewHumidity);
         textViewTemp = (TextView) findViewById(R.id.textViewTemp);
+        tempHumidLayout = (RelativeLayout) findViewById(R.id.temp_humid_layout);
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.offButton);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                finish();
+                System.exit(0);
             }
         });
 
@@ -102,6 +112,7 @@ public class MainActivity extends Activity {
 
         // 3. Create the player
         player = ExoPlayerFactory.newSimpleInstance(this, trackSelector, loadControl);
+        player.addListener(new AudioPlayerEventListener(this));
 
         // Measures bandwidth during playback. Can be null if not required.
         DefaultBandwidthMeter defaultBandwidthMeter = new DefaultBandwidthMeter();
@@ -147,11 +158,7 @@ public class MainActivity extends Activity {
 
         mjpegView.startPlayback();
 
-        broadcastReceiver = new UdpBroadcastReceiver(textViewHumidity, textViewTemp);
-        broadcastReceiver.execute("255.255.255.255", "54545");
-        /*if (tcpClient == null) {
-            tcpClient = new TcpClient(textViewTemp, textViewHumidity);
-            tcpClient.execute(HOST, PORT);
-        }*/
+        broadcastReceiver = new UdpBroadcastReceiver(tempHumidLayout, textViewHumidity, textViewTemp);
+        broadcastReceiver.execute("255.255.255.255", PORT);
     }
 }

@@ -2,6 +2,8 @@ package de.jschmucker.bmon;
 
 import android.os.AsyncTask;
 import android.util.Log;
+import android.view.View;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import java.io.IOException;
@@ -20,10 +22,12 @@ public class UdpBroadcastReceiver extends AsyncTask<String, String, String> {
     private boolean listen;
     private TextView humidityView;
     private TextView tempView;
+    private RelativeLayout layout;
 
-    public UdpBroadcastReceiver(TextView humidityTextView, TextView tempTextView) {
+    public UdpBroadcastReceiver(RelativeLayout layout, TextView humidityTextView, TextView tempTextView) {
         humidityView = humidityTextView;
         tempView = tempTextView;
+        this.layout = layout;
     }
 
     private void listenForBroadcast(InetAddress inetAddress, Integer port)
@@ -35,13 +39,13 @@ public class UdpBroadcastReceiver extends AsyncTask<String, String, String> {
         }
         //socket.setSoTimeout(1000);
         DatagramPacket packet = new DatagramPacket(recvBuf, recvBuf.length);
-        Log.e("UDP", "Waiting for UDP broadcast");
+        Log.d("UDP", "Waiting for UDP broadcast");
         socket.receive(packet);
 
         String senderIP = packet.getAddress().getHostAddress();
         String message = new String(packet.getData()).trim();
 
-        Log.e("UDP", "Got UDB broadcast from " + senderIP + ", message: " + message);
+        Log.d("UDP", "Got UDB broadcast from " + senderIP + ", message: " + message);
 
         String mesAr[] = message.split(":");
         if (mesAr.length >= 2) {
@@ -52,7 +56,7 @@ public class UdpBroadcastReceiver extends AsyncTask<String, String, String> {
 
             publishProgress(mesAr[0], mesAr[1]);
         } else {
-            Log.d(getClass().getSimpleName(),
+            Log.e(getClass().getSimpleName(),
                     "Wrong message received: length=" + mesAr.length);
         }
         socket.close();
@@ -82,8 +86,11 @@ public class UdpBroadcastReceiver extends AsyncTask<String, String, String> {
     @Override
     protected void onProgressUpdate(String... progress) {
         super.onProgressUpdate(progress);
-        tempView.setText(progress[0]);
-        humidityView.setText(progress[1]);
+        if (layout.getVisibility() == View.INVISIBLE) {
+            layout.setVisibility(View.VISIBLE);
+        }
+        tempView.setText(progress[1]);
+        humidityView.setText(progress[0]);
     }
 
     public void stop() {
