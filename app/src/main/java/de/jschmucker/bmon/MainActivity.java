@@ -2,9 +2,12 @@ package de.jschmucker.bmon;
 
 import android.app.Activity;
 import android.app.Dialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.graphics.Color;
 import android.net.Uri;
+import android.net.wifi.WifiInfo;
+import android.net.wifi.WifiManager;
 import android.os.Handler;
 import android.os.Message;
 import android.support.design.widget.FloatingActionButton;
@@ -42,17 +45,22 @@ import org.w3c.dom.Text;
 import java.io.IOException;
 import java.util.Observable;
 import java.util.Observer;
+import java.util.StringTokenizer;
 
 public class MainActivity extends Activity {
+    private final String BMON_AP_IP = "192.168.2.1";
+    private final String BMON_HOSTNAME = "bmonpi";
+    private final String BMON_AP_NAME = "SchmuckerBmonAP";
+
+//    private String bmon_address = BMON_AP_IP;
 
     /* Audio */
-    private final String audioUrl = "http://bmonpi:8000/raspi";
+    private String audioUrl = "http://192.168.2.1:8000/raspi";
     private SimpleExoPlayer player;
-    private AudioPlayerEventListener eventListener;
     private MediaSource audioSource;
 
     /* Video */
-    private final String videoUrl = "http://bmonpi:8090/";
+    private String videoUrl = "http://192.168.2.1:8090/";
     private MjpegView mjpegView;
 
     /* Temperatur and Humidity Receiver */
@@ -61,7 +69,6 @@ public class MainActivity extends Activity {
     private TextView textViewTemp;
     private TextView textViewHumidity;
     private static final String PORT = "54545";
-    private static final String HOST = "bmonpi";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -71,6 +78,8 @@ public class MainActivity extends Activity {
         Window window = getWindow();
         window.setStatusBarColor(Color.BLACK);
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
+        //initAdress();
 
         textViewHumidity = (TextView) findViewById(R.id.textViewHumidity);
         textViewTemp = (TextView) findViewById(R.id.textViewTemp);
@@ -89,6 +98,14 @@ public class MainActivity extends Activity {
          */
         mjpegView = (MjpegView) findViewById(R.id.mjpeg_view);
         mjpegView.setDisplayMode(MjpegView.SIZE_BEST_FIT);
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+
+        // Check WIFI Network and connect to BMonPi
+
 
         NetworkConnection connection = new NetworkConnection(mjpegView);
         connection.execute(videoUrl);
@@ -98,6 +115,19 @@ public class MainActivity extends Activity {
          */
         initAudioStream();
     }
+
+    @Override
+    protected void onStop() {
+        mjpegView.stopPlayback();
+
+        super.onStop();
+    }
+
+/*    private void initAdress() {
+        // audioUrl = "http://" + bmon_address + ":8000/raspi";
+        // videoUrl = "http://" + bmon_address + ":8090/";
+
+    }*/
 
     private void initAudioStream() {
         // 1. Create a default TrackSelector
@@ -140,15 +170,9 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onPause() {
-
-        /*if (tcpClient != null) {
-            tcpClient.cancel(true);
-            tcpClient = null;
-        }*/
         broadcastReceiver.stop();
         broadcastReceiver = null;
 
-        mjpegView.stopPlayback();
         super.onPause();
     }
 
@@ -156,9 +180,9 @@ public class MainActivity extends Activity {
     protected void onResume() {
         super.onResume();
 
-        mjpegView.startPlayback();
-
         broadcastReceiver = new UdpBroadcastReceiver(tempHumidLayout, textViewHumidity, textViewTemp);
         broadcastReceiver.execute("255.255.255.255", PORT);
+
+        mjpegView.startPlayback();
     }
 }
