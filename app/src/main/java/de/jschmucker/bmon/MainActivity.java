@@ -1,26 +1,22 @@
 package de.jschmucker.bmon;
 
 import android.app.Activity;
-import android.app.Dialog;
+import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.Color;
 import android.net.Uri;
+import android.net.wifi.ScanResult;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
-import android.os.Handler;
-import android.os.Message;
 import android.support.design.widget.FloatingActionButton;
-import android.support.v4.content.ContextCompat;
-import android.support.v7.app.AlertDialog;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
-import android.widget.VideoView;
 
 import com.google.android.exoplayer2.DefaultLoadControl;
 import com.google.android.exoplayer2.ExoPlayerFactory;
@@ -40,12 +36,7 @@ import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
 import com.google.android.exoplayer2.util.Util;
 
-import org.w3c.dom.Text;
-
-import java.io.IOException;
-import java.util.Observable;
-import java.util.Observer;
-import java.util.StringTokenizer;
+import java.util.List;
 
 public class MainActivity extends Activity {
     private final String BMON_AP_IP = "192.168.2.1";
@@ -64,11 +55,16 @@ public class MainActivity extends Activity {
     private MjpegView mjpegView;
 
     /* Temperatur and Humidity Receiver */
-    private UdpBroadcastReceiver broadcastReceiver;
+    private UdpBroadcastReceiver udpBroadcastReceiver;
     private RelativeLayout tempHumidLayout;
     private TextView textViewTemp;
     private TextView textViewHumidity;
     private static final String PORT = "54545";
+
+
+    /**********************************************************************************************\
+     * Activity overrides
+     **********************************************************************************************/
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -105,7 +101,7 @@ public class MainActivity extends Activity {
         super.onStart();
 
         // Check WIFI Network and connect to BMonPi
-
+        checkWiFiConnection();
 
         NetworkConnection connection = new NetworkConnection(mjpegView);
         connection.execute(videoUrl);
@@ -123,11 +119,115 @@ public class MainActivity extends Activity {
         super.onStop();
     }
 
-/*    private void initAdress() {
-        // audioUrl = "http://" + bmon_address + ":8000/raspi";
-        // videoUrl = "http://" + bmon_address + ":8090/";
+    @Override
+    protected void onDestroy() {
+        player.release();
+        super.onDestroy();
+    }
 
-    }*/
+    @Override
+    protected void onPause() {
+        udpBroadcastReceiver.stop();
+        udpBroadcastReceiver = null;
+
+        super.onPause();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        udpBroadcastReceiver = new UdpBroadcastReceiver(tempHumidLayout, textViewHumidity, textViewTemp);
+        udpBroadcastReceiver.execute("255.255.255.255", PORT);
+
+        mjpegView.startPlayback();
+    }
+
+
+    /**********************************************************************************************\
+     * Connecting to BMon Wifi
+     **********************************************************************************************/
+
+    private void checkWiFiConnection() {
+        WifiManager wifiManager =
+                (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+        WifiInfo wifiInfo = wifiManager.getConnectionInfo();
+        String ssid = wifiInfo.getSSID();
+
+        if (!ssid.equals(BMON_AP_NAME)) {
+            searchForBmonWifi();
+            connectToBmonWifi();
+        }
+    }
+
+    private void searchForBmonWifi() {
+        final WifiManager wifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
+
+        BroadcastReceiver wifiReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                List<ScanResult> results;
+                results = wifiManager.getScanResults();
+
+                boolean found = false;
+                for (ScanResult result : results) {
+                    if (BMON_AP_NAME.equals(result.SSID)) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (found) {
+                    connectToBmonWifi();
+                } else {
+                    wifiManager.startScan();
+                }
+            }
+        };
+
+        registerReceiver(wifiReceiver, new IntentFilter(
+                WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
+        if(wifiManager.isWifiEnabled()==false)
+        {
+            wifiManager.setWifiEnabled(true);
+        }
+        wifiManager.startScan();
+    }
+
+    private void connectToBmonWifi() {
+        String networkSSID = "test";
+        String networkPass = "pass";
+
+        // create wifi configuration
+        WifiConfiguration conf = new WifiConfiguration();
+        conf.SSID = "\"" + networkSSID + "\"";   // Please note the quotes. String should contain ssid in quotes
+
+        // add passphrase to configuration
+        conf.preSharedKey = "\""+ networkPass +"\"";
+
+        // open network
+        conf.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.NONE);
+
+        // Add to Wifi manager
+        WifiManager wifiManager = (WifiManager)context.getSystemService(Context.WIFI_SERVICE);
+        wifiManager.addNetwork(conf);
+
+        // enable network in wifimanager
+        List<WifiConfiguration> list = wifiManager.getConfiguredNetworks();
+        for( WifiConfiguration i : list ) {
+            if(i.SSID != null && i.SSID.equals("\"" + networkSSID + "\"")) {
+                wifiManager.disconnect();
+                wifiManager.enableNetwork(i.networkId, true);
+                wifiManager.reconnect();
+
+                break;
+            }
+        }
+    }
+
+
+    /**********************************************************************************************\
+     * Initialize the Audio stream
+     **********************************************************************************************/
 
     private void initAudioStream() {
         // 1. Create a default TrackSelector
@@ -160,29 +260,5 @@ public class MainActivity extends Activity {
 
         player.prepare(audioSource);
         player.setVolume(1);
-    }
-
-    @Override
-    protected void onDestroy() {
-        player.release();
-        super.onDestroy();
-    }
-
-    @Override
-    protected void onPause() {
-        broadcastReceiver.stop();
-        broadcastReceiver = null;
-
-        super.onPause();
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-
-        broadcastReceiver = new UdpBroadcastReceiver(tempHumidLayout, textViewHumidity, textViewTemp);
-        broadcastReceiver.execute("255.255.255.255", PORT);
-
-        mjpegView.startPlayback();
     }
 }
