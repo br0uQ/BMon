@@ -2,4 +2,6 @@
     <string name="app_name">BMon</string>
     <string name="error_dialog_title">Fehler</string>
     <string name="error_audio_connection">Konnte keine Verbindung zum Audiostream herstellen.</string>
+    <string name="searching_message">Suche nach BabyMonitor. Falls nicht bereits geschehen, bitte BabyMonitor einschalten.\n&#8230;</string>
+    <string name="connecting_message">BabyMonitor gefunden. Verbinde jetzt mit BabyMonitor.\n&#8230;</string>
 </resources>

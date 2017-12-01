@@ -1,17 +1,25 @@
 package de.jschmucker.bmon;
 
+import android.Manifest;
 import android.app.Activity;
+import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.net.Uri;
 import android.net.wifi.ScanResult;
+import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
+import android.os.Build;
 import android.support.design.widget.FloatingActionButton;
 import android.os.Bundle;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
+import android.util.Log;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
@@ -41,7 +49,12 @@ import java.util.List;
 public class MainActivity extends Activity {
     private final String BMON_AP_IP = "192.168.2.1";
     private final String BMON_HOSTNAME = "bmonpi";
-    private final String BMON_AP_NAME = "SchmuckerBmonAP";
+    private final String BMON_AP_NAME = "SchmuckerBabyMon-AP";
+    private final String BMON_AP_PASS = "raspberry";
+    private final int PERMISSION_REQUEST_LOCATION = 1;
+
+    private ProgressDialog dialog;
+    private WifiManager wifiManager;
 
 //    private String bmon_address = BMON_AP_IP;
 
@@ -72,8 +85,14 @@ public class MainActivity extends Activity {
         setContentView(R.layout.activity_main);
 
         Window window = getWindow();
-        window.setStatusBarColor(Color.BLACK);
+        // Make sure we're running on Lollypop or higher to use StatusBarColor
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            window.setStatusBarColor(Color.BLACK);
+        }
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
+        wifiManager =
+                (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
 
         //initAdress();
 
@@ -85,7 +104,7 @@ public class MainActivity extends Activity {
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                System.exit(0);
+                closeApp();
             }
         });
 
@@ -103,18 +122,19 @@ public class MainActivity extends Activity {
         // Check WIFI Network and connect to BMonPi
         checkWiFiConnection();
 
-        NetworkConnection connection = new NetworkConnection(mjpegView);
-        connection.execute(videoUrl);
+        //NetworkConnection connection = new NetworkConnection(mjpegView);
+        //connection.execute(videoUrl);
 
         /*
         Init Audio Stream
          */
-        initAudioStream();
+        //initAudioStream();
     }
 
     @Override
     protected void onStop() {
         mjpegView.stopPlayback();
+        removeBmonAp();
 
         super.onStop();
     }
@@ -149,19 +169,57 @@ public class MainActivity extends Activity {
      **********************************************************************************************/
 
     private void checkWiFiConnection() {
-        WifiManager wifiManager =
-                (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
         WifiInfo wifiInfo = wifiManager.getConnectionInfo();
         String ssid = wifiInfo.getSSID();
 
         if (!ssid.equals(BMON_AP_NAME)) {
+            dialog = ProgressDialog.show(this, "Verbinde mit BabyMonitor",
+                    getString(R.string.searching_message), true);
+            connect();
             searchForBmonWifi();
-            connectToBmonWifi();
+            // connectToBmonWifi();
+        }
+    }
+
+    private void connect() {
+        checkWifiPermission();
+    }
+
+    private void checkWifiPermission() {
+        // Here, thisActivity is the current activity
+        if (ContextCompat.checkSelfPermission(this,
+                Manifest.permission.ACCESS_COARSE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, PERMISSION_REQUEST_LOCATION);
+        } else {
+            searchForBmonWifi();
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           String permissions[], int[] grantResults) {
+        switch (requestCode) {
+            case PERMISSION_REQUEST_LOCATION: {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+
+                    searchForBmonWifi();
+
+                } else {
+                    closeApp();
+                }
+                return;
+            }
         }
     }
 
     private void searchForBmonWifi() {
-        final WifiManager wifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
+        final WifiManager wifiManager =
+                (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
 
         BroadcastReceiver wifiReceiver = new BroadcastReceiver() {
             @Override
@@ -171,6 +229,7 @@ public class MainActivity extends Activity {
 
                 boolean found = false;
                 for (ScanResult result : results) {
+                    Log.d(getClass().getSimpleName(), "Found SSID: " + result.SSID);
                     if (BMON_AP_NAME.equals(result.SSID)) {
                         found = true;
                         break;
@@ -194,8 +253,11 @@ public class MainActivity extends Activity {
     }
 
     private void connectToBmonWifi() {
-        String networkSSID = "test";
-        String networkPass = "pass";
+        String networkSSID = BMON_AP_NAME;
+        String networkPass = BMON_AP_PASS;
+
+        // actualize search Dialogue
+        dialog.setMessage(getString(R.string.connecting_message));
 
         // create wifi configuration
         WifiConfiguration conf = new WifiConfiguration();
@@ -204,11 +266,13 @@ public class MainActivity extends Activity {
         // add passphrase to configuration
         conf.preSharedKey = "\""+ networkPass +"\"";
 
+        // set high priority
+        conf.priority = getMaxPriority() + 1;
+
         // open network
         conf.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.NONE);
 
         // Add to Wifi manager
-        WifiManager wifiManager = (WifiManager)context.getSystemService(Context.WIFI_SERVICE);
         wifiManager.addNetwork(conf);
 
         // enable network in wifimanager
@@ -222,8 +286,21 @@ public class MainActivity extends Activity {
                 break;
             }
         }
+
+        // hide search dialogue
+        // dialog.dismiss();
     }
 
+    private int getMaxPriority() {
+        final List<WifiConfiguration> configurations = wifiManager.getConfiguredNetworks();
+        int pri = 0;
+        for (final WifiConfiguration config : configurations) {
+            if (config.priority > pri) {
+                pri = config.priority;
+            }
+        }
+        return pri;
+    }
 
     /**********************************************************************************************\
      * Initialize the Audio stream
@@ -260,5 +337,26 @@ public class MainActivity extends Activity {
 
         player.prepare(audioSource);
         player.setVolume(1);
+    }
+
+
+    /**********************************************************************************************\
+     * Close this App
+     **********************************************************************************************/
+
+    private void removeBmonAp() {
+        List<WifiConfiguration> wifiConfigurations = wifiManager.getConfiguredNetworks();
+        for (int i = 0; i < wifiConfigurations.size(); i++) {
+            if (wifiConfigurations.get(i).SSID.equals(BMON_AP_NAME)) {
+                wifiManager.removeNetwork(i);
+            }
+        }
+    }
+
+    private void closeApp() {
+        /* remove BMON AP from wifimanager */
+        removeBmonAp();
+
+        System.exit(0);
     }
 }
