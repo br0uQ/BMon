@@ -133,7 +133,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onStop() {
         mjpegView.stopPlayback();
-        removeBmonAp();
+        wifiConnect.removeWifi();
 
         super.onStop();
     }
@@ -173,7 +173,11 @@ public class MainActivity extends Activity {
         wifiManager = (WifiManager) this.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
         wifiConnect = new WifiConnect(wifiManager);
         wifiConnect.verbinden(BMON_AP_NAME,BMON_AP_PASS);
-        while(wifiConnect.isVerbindungAktiv());
+        while (true) {
+            if (wifiConnect.isVerbindungAktiv()) {
+                break;
+            }
+        }
         dialog.dismiss();
     }
 
@@ -354,19 +358,9 @@ public class MainActivity extends Activity {
     /**********************************************************************************************\
      * Close this App
      **********************************************************************************************/
-
-    private void removeBmonAp() {
-        List<WifiConfiguration> wifiConfigurations = wifiManager.getConfiguredNetworks();
-        for (int i = 0; i < wifiConfigurations.size(); i++) {
-            if (wifiConfigurations.get(i).SSID.equals(BMON_AP_NAME)) {
-                wifiManager.removeNetwork(i);
-            }
-        }
-    }
-
     private void closeApp() {
         /* remove BMON AP from wifimanager */
-        removeBmonAp();
+        wifiConnect.removeWifi();
 
         System.exit(0);
     }
