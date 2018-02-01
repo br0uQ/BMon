@@ -55,6 +55,7 @@ public class MainActivity extends Activity {
 
     private ProgressDialog dialog;
     private WifiManager wifiManager;
+    private WifiConnect wifiConnect;
 
 //    private String bmon_address = BMON_AP_IP;
 
@@ -91,9 +92,6 @@ public class MainActivity extends Activity {
         }
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
-        wifiManager =
-                (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
-
         //initAdress();
 
         textViewHumidity = (TextView) findViewById(R.id.textViewHumidity);
@@ -120,7 +118,8 @@ public class MainActivity extends Activity {
         super.onStart();
 
         // Check WIFI Network and connect to BMonPi
-        checkWiFiConnection();
+        //checkWiFiConnection();
+        connectToWifi();
 
         //NetworkConnection connection = new NetworkConnection(mjpegView);
         //connection.execute(videoUrl);
@@ -168,6 +167,17 @@ public class MainActivity extends Activity {
      * Connecting to BMon Wifi
      **********************************************************************************************/
 
+    private void connectToWifi(){
+        dialog = ProgressDialog.show(this, "Verbinde mit BabyMonitor",
+                getString(R.string.connecting_message), true);
+        wifiManager = (WifiManager) this.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+        wifiConnect = new WifiConnect(wifiManager);
+        wifiConnect.verbinden(BMON_AP_NAME,BMON_AP_PASS);
+        while(wifiConnect.isVerbindungAktiv());
+        dialog.dismiss();
+    }
+
+    /*
     private void checkWiFiConnection() {
         WifiInfo wifiInfo = wifiManager.getConnectionInfo();
         String ssid = wifiInfo.getSSID();
@@ -301,6 +311,7 @@ public class MainActivity extends Activity {
         }
         return pri;
     }
+    */
 
     /**********************************************************************************************\
      * Initialize the Audio stream
