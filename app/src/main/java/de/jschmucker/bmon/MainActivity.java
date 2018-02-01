@@ -9,6 +9,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.net.ConnectivityManager;
 import android.net.Uri;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiConfiguration;
@@ -121,13 +122,13 @@ public class MainActivity extends Activity {
         //checkWiFiConnection();
         connectToWifi();
 
-        //NetworkConnection connection = new NetworkConnection(mjpegView);
-        //connection.execute(videoUrl);
+        NetworkConnection connection = new NetworkConnection(mjpegView);
+        connection.execute(videoUrl);
 
         /*
         Init Audio Stream
          */
-        //initAudioStream();
+        initAudioStream();
     }
 
     @Override
@@ -157,7 +158,7 @@ public class MainActivity extends Activity {
         super.onResume();
 
         udpBroadcastReceiver = new UdpBroadcastReceiver(tempHumidLayout, textViewHumidity, textViewTemp);
-        udpBroadcastReceiver.execute("255.255.255.255", PORT);
+        udpBroadcastReceiver.execute("192.168.2.255", PORT);
 
         mjpegView.startPlayback();
     }
@@ -168,17 +169,12 @@ public class MainActivity extends Activity {
      **********************************************************************************************/
 
     private void connectToWifi(){
-        dialog = ProgressDialog.show(this, "Verbinde mit BabyMonitor",
-                getString(R.string.connecting_message), true);
         wifiManager = (WifiManager) this.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
         wifiConnect = new WifiConnect(wifiManager);
         wifiConnect.verbinden(BMON_AP_NAME,BMON_AP_PASS);
-        while (true) {
-            if (wifiConnect.isVerbindungAktiv()) {
-                break;
-            }
-        }
-        dialog.dismiss();
+        ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        while (!wifiConnect.isVerbindungAktiv(connectivityManager));
+        Log.d(getClass().getSimpleName(), "Connected to Wifi");
     }
 
     /*

@@ -1,5 +1,6 @@
 package de.jschmucker.bmon;
 
+import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiInfo;
@@ -46,10 +47,12 @@ public class WifiConnect {
         wifiManager.reconnect();
     }
 
-    boolean isVerbindungAktiv()
+    boolean isVerbindungAktiv(ConnectivityManager connectivityManager)
     {
-        WifiInfo wifiInfo = wifiManager.getConnectionInfo();
-        return  ((WifiInfo.getDetailedStateOf(wifiInfo.getSupplicantState()) == NetworkInfo.DetailedState.CONNECTED));
+        NetworkInfo mWifi = connectivityManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
+
+        Log.d(getClass().getSimpleName(), "WifiIsconnected = " + mWifi.isConnected());
+        return mWifi.isConnected();
     }
 
     void removeWifi() {

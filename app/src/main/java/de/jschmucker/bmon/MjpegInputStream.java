@@ -14,6 +14,7 @@ import java.util.Properties;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.util.Log;
 
 public class MjpegInputStream extends DataInputStream  {
     private final byte[] SOI_MARKER = { (byte) 0xFF, (byte) 0xD8 };
@@ -92,11 +93,17 @@ public class MjpegInputStream extends DataInputStream  {
             mContentLength = parseContentLength(header);
         } catch (NumberFormatException nfe) {
             mContentLength = getEndOfSeqeunce(this, EOF_MARKER);
+        } catch (IllegalArgumentException ex) {
+            Log.d(getClass().getSimpleName(), ex.toString());
         }
         reset();
-        byte[] frameData = new byte[mContentLength];
-        skipBytes(headerLen);
-        readFully(frameData);
-        return BitmapFactory.decodeStream(new ByteArrayInputStream(frameData));
+        if (mContentLength > 0) {
+            byte[] frameData = new byte[mContentLength];
+            skipBytes(headerLen);
+            readFully(frameData);
+            return BitmapFactory.decodeStream(new ByteArrayInputStream(frameData));
+        } else {
+            return null;
+        }
     }
 }
