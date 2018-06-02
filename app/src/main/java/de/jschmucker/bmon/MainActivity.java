@@ -77,9 +77,9 @@ public class MainActivity extends Activity {
     private static final String PORT = "54545";
 
 
-    /**********************************************************************************************\
+    /*************************************************************************\
      * Activity overrides
-     **********************************************************************************************/
+     *************************************************************************/
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -157,22 +157,25 @@ public class MainActivity extends Activity {
     protected void onResume() {
         super.onResume();
 
-        udpBroadcastReceiver = new UdpBroadcastReceiver(tempHumidLayout, textViewHumidity, textViewTemp);
+        udpBroadcastReceiver = new UdpBroadcastReceiver(tempHumidLayout,
+                textViewHumidity, textViewTemp);
         udpBroadcastReceiver.execute("192.168.2.255", PORT);
 
         mjpegView.startPlayback();
     }
 
 
-    /**********************************************************************************************\
+    /*************************************************************************\
      * Connecting to BMon Wifi
-     **********************************************************************************************/
+     *************************************************************************/
 
     private void connectToWifi(){
-        wifiManager = (WifiManager) this.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+        wifiManager = (WifiManager) this.getApplicationContext()
+                .getSystemService(Context.WIFI_SERVICE);
         wifiConnect = new WifiConnect(wifiManager);
         wifiConnect.verbinden(BMON_AP_NAME,BMON_AP_PASS);
-        ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        ConnectivityManager connectivityManager =
+                (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
         while (!wifiConnect.isVerbindungAktiv(connectivityManager));
         Log.d(getClass().getSimpleName(), "Connected to Wifi");
     }
@@ -202,7 +205,8 @@ public class MainActivity extends Activity {
                 != PackageManager.PERMISSION_GRANTED) {
 
             ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, PERMISSION_REQUEST_LOCATION);
+                    new String[]{Manifest.permission.ACCESS_COARSE_LOCATION},
+                    PERMISSION_REQUEST_LOCATION);
         } else {
             searchForBmonWifi();
         }
@@ -271,7 +275,8 @@ public class MainActivity extends Activity {
 
         // create wifi configuration
         WifiConfiguration conf = new WifiConfiguration();
-        conf.SSID = "\"" + networkSSID + "\"";   // Please note the quotes. String should contain ssid in quotes
+        // Please note the quotes. String should contain ssid in quotes
+        conf.SSID = "\"" + networkSSID + "\"";
 
         // add passphrase to configuration
         conf.preSharedKey = "\""+ networkPass +"\"";
@@ -313,9 +318,9 @@ public class MainActivity extends Activity {
     }
     */
 
-    /**********************************************************************************************\
+    /*************************************************************************\
      * Initialize the Audio stream
-     **********************************************************************************************/
+     *************************************************************************/
 
     private void initAudioStream() {
         // 1. Create a default TrackSelector
@@ -351,9 +356,9 @@ public class MainActivity extends Activity {
     }
 
 
-    /**********************************************************************************************\
+    /*************************************************************************\
      * Close this App
-     **********************************************************************************************/
+     *************************************************************************/
     private void closeApp() {
         /* remove BMON AP from wifimanager */
         wifiConnect.removeWifi();
