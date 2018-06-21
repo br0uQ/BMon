@@ -7,9 +7,11 @@ public class Watchdog implements Runnable {
     private int time;
     private volatile int counter;
     private boolean keepRunning;
+    private Callable callable;
 
-    public Watchdog(int time) {
+    public Watchdog(Callable callable, int time) {
         this.time = time;
+        this.callable = callable;
     }
 
     public void setWatchdog() {
@@ -36,11 +38,14 @@ public class Watchdog implements Runnable {
         while (keepRunning) {
             try {
                 Thread.sleep(1000); // sleep 1 second
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
 
             counter--;
             if (counter <= 0) {
                 // time is over
+                callable.call();
             }
         }
     }

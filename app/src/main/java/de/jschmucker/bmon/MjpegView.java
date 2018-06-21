@@ -43,7 +43,7 @@ public class MjpegView extends SurfaceView implements SurfaceHolder.Callback {
     private int dispHeight;
     private int displayMode;
 
-    public class MjpegViewThread extends Thread {
+    public class MjpegViewThread extends Thread implements Callable {
         private SurfaceHolder mSurfaceHolder;
         private int frameCounter = 0;
         private long start;
@@ -109,7 +109,7 @@ public class MjpegView extends SurfaceView implements SurfaceHolder.Callback {
             Canvas c = null;
             Paint p = new Paint();
             String fps = "";
-            Watchdog watchdog = new Watchdog(10); // create Watchdog with 10 second timer
+            Watchdog watchdog = new Watchdog(this, 10); // create Watchdog with 10 second timer
             watchdog.startWatchdog();
             while (mRun) {
                 watchdog.setWatchdog();
@@ -151,6 +151,11 @@ public class MjpegView extends SurfaceView implements SurfaceHolder.Callback {
                 }
             }
             watchdog.stopWatchdog();
+        }
+
+        @Override
+        public void call() {
+            // watchdog timer
         }
     }
 
