@@ -17,6 +17,8 @@ package de.jschmucker.bmon;
         import android.view.SurfaceHolder;
         import android.view.SurfaceView;
 
+        import javax.xml.transform.sax.TransformerHandler;
+
 
 public class MjpegView extends SurfaceView implements SurfaceHolder.Callback {
     public final static int POSITION_UPPER_LEFT = 9;
@@ -107,7 +109,10 @@ public class MjpegView extends SurfaceView implements SurfaceHolder.Callback {
             Canvas c = null;
             Paint p = new Paint();
             String fps = "";
+            Watchdog watchdog = new Watchdog(10); // create Watchdog with 10 second timer
+            watchdog.startWatchdog();
             while (mRun) {
+                watchdog.setWatchdog();
                 if (surfaceDone) {
                     try {
                         c = mSurfaceHolder.lockCanvas();
@@ -145,6 +150,7 @@ public class MjpegView extends SurfaceView implements SurfaceHolder.Callback {
                     }
                 }
             }
+            watchdog.stopWatchdog();
         }
     }
 
