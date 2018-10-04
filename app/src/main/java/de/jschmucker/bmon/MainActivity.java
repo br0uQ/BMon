@@ -1,31 +1,22 @@
 package de.jschmucker.bmon;
 
-import android.Manifest;
 import android.app.Activity;
 import android.app.ProgressDialog;
-import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
-import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.net.ConnectivityManager;
 import android.net.Uri;
-import android.net.wifi.ScanResult;
-import android.net.wifi.WifiConfiguration;
-import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.support.design.widget.FloatingActionButton;
 import android.os.Bundle;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.exoplayer2.DefaultLoadControl;
 import com.google.android.exoplayer2.ExoPlayerFactory;
@@ -107,23 +98,20 @@ public class MainActivity extends Activity {
             }
         });
 
+        Thread.setDefaultUncaughtExceptionHandler(new MyExceptionHandler(this));
+        if (getIntent().getBooleanExtra("crash", false)) {
+            Toast.makeText(this, "App restarted after crash", Toast.LENGTH_SHORT).show();
+        }
+
         /*
         Init Video Stream
          */
         mjpegView = (MjpegView) findViewById(R.id.mjpeg_view);
         mjpegView.setDisplayMode(MjpegView.SIZE_BEST_FIT);
-    }
-
-    @Override
-    protected void onStart() {
-        super.onStart();
 
         // Check WIFI Network and connect to BMonPi
         //checkWiFiConnection();
         connectToWifi();
-
-        NetworkConnection connection = new NetworkConnection(mjpegView);
-        connection.execute(videoUrl);
 
         /*
         Init Audio Stream
@@ -132,9 +120,16 @@ public class MainActivity extends Activity {
     }
 
     @Override
+    protected void onStart() {
+        super.onStart();
+
+        NetworkConnection connection = new NetworkConnection(mjpegView);
+        connection.execute(videoUrl);
+    }
+
+    @Override
     protected void onStop() {
         mjpegView.stopPlayback();
-        wifiConnect.removeWifi();
 
         super.onStop();
     }
@@ -142,6 +137,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onDestroy() {
         player.release();
+        wifiConnect.removeWifi();
         super.onDestroy();
     }
 
@@ -179,144 +175,6 @@ public class MainActivity extends Activity {
         while (!wifiConnect.isVerbindungAktiv(connectivityManager));
         Log.d(getClass().getSimpleName(), "Connected to Wifi");
     }
-
-    /*
-    private void checkWiFiConnection() {
-        WifiInfo wifiInfo = wifiManager.getConnectionInfo();
-        String ssid = wifiInfo.getSSID();
-
-        if (!ssid.equals(BMON_AP_NAME)) {
-            dialog = ProgressDialog.show(this, "Verbinde mit BabyMonitor",
-                    getString(R.string.searching_message), true);
-            connect();
-            searchForBmonWifi();
-            // connectToBmonWifi();
-        }
-    }
-
-    private void connect() {
-        checkWifiPermission();
-    }
-
-    private void checkWifiPermission() {
-        // Here, thisActivity is the current activity
-        if (ContextCompat.checkSelfPermission(this,
-                Manifest.permission.ACCESS_COARSE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED) {
-
-            ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.ACCESS_COARSE_LOCATION},
-                    PERMISSION_REQUEST_LOCATION);
-        } else {
-            searchForBmonWifi();
-        }
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode,
-                                           String permissions[], int[] grantResults) {
-        switch (requestCode) {
-            case PERMISSION_REQUEST_LOCATION: {
-                // If request is cancelled, the result arrays are empty.
-                if (grantResults.length > 0
-                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-
-                    searchForBmonWifi();
-
-                } else {
-                    closeApp();
-                }
-                return;
-            }
-        }
-    }
-
-    private void searchForBmonWifi() {
-        final WifiManager wifiManager =
-                (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
-
-        BroadcastReceiver wifiReceiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                List<ScanResult> results;
-                results = wifiManager.getScanResults();
-
-                boolean found = false;
-                for (ScanResult result : results) {
-                    Log.d(getClass().getSimpleName(), "Found SSID: " + result.SSID);
-                    if (BMON_AP_NAME.equals(result.SSID)) {
-                        found = true;
-                        break;
-                    }
-                }
-                if (found) {
-                    connectToBmonWifi();
-                } else {
-                    wifiManager.startScan();
-                }
-            }
-        };
-
-        registerReceiver(wifiReceiver, new IntentFilter(
-                WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
-        if(wifiManager.isWifiEnabled()==false)
-        {
-            wifiManager.setWifiEnabled(true);
-        }
-        wifiManager.startScan();
-    }
-
-    private void connectToBmonWifi() {
-        String networkSSID = BMON_AP_NAME;
-        String networkPass = BMON_AP_PASS;
-
-        // actualize search Dialogue
-        dialog.setMessage(getString(R.string.connecting_message));
-
-        // create wifi configuration
-        WifiConfiguration conf = new WifiConfiguration();
-        // Please note the quotes. String should contain ssid in quotes
-        conf.SSID = "\"" + networkSSID + "\"";
-
-        // add passphrase to configuration
-        conf.preSharedKey = "\""+ networkPass +"\"";
-
-        // set high priority
-        conf.priority = getMaxPriority() + 1;
-
-        // open network
-        conf.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.NONE);
-
-        // Add to Wifi manager
-        wifiManager.addNetwork(conf);
-
-        // enable network in wifimanager
-        List<WifiConfiguration> list = wifiManager.getConfiguredNetworks();
-        for( WifiConfiguration i : list ) {
-            if(i.SSID != null && i.SSID.equals("\"" + networkSSID + "\"")) {
-                wifiManager.disconnect();
-                wifiManager.enableNetwork(i.networkId, true);
-                wifiManager.reconnect();
-
-                break;
-            }
-        }
-
-        // hide search dialogue
-        // dialog.dismiss();
-    }
-
-    private int getMaxPriority() {
-        final List<WifiConfiguration> configurations = wifiManager.getConfiguredNetworks();
-        int pri = 0;
-        for (final WifiConfiguration config : configurations) {
-            if (config.priority > pri) {
-                pri = config.priority;
-            }
-        }
-        return pri;
-    }
-    */
 
     /*************************************************************************\
      * Initialize the Audio stream
