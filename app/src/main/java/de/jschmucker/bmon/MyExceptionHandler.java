@@ -17,6 +17,8 @@ public class MyExceptionHandler implements Thread.UncaughtExceptionHandler {
     public void uncaughtException(Thread thread, Throwable ex) {
         Intent intent = new Intent(activity, MainActivity.class);
         intent.putExtra("crash", true);
+        intent.putExtra(MainActivity.CRASH_REPORT_EXTRA,
+                "App restarted after exception:\n" + ex.getMessage());
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP
                 | Intent.FLAG_ACTIVITY_CLEAR_TASK
                 | Intent.FLAG_ACTIVITY_NEW_TASK);

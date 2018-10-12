@@ -44,6 +44,7 @@ public class MainActivity extends Activity {
     private final String BMON_AP_NAME = "SchmuckerBabyMon-AP";
     private final String BMON_AP_PASS = "raspberry";
     private final int PERMISSION_REQUEST_LOCATION = 1;
+    public static final String CRASH_REPORT_EXTRA = "CRASH_REPORT_EXTRA";
 
     private ProgressDialog dialog;
     private WifiManager wifiManager;
@@ -100,7 +101,11 @@ public class MainActivity extends Activity {
 
         Thread.setDefaultUncaughtExceptionHandler(new MyExceptionHandler(this));
         if (getIntent().getBooleanExtra("crash", false)) {
-            Toast.makeText(this, "App restarted after crash", Toast.LENGTH_SHORT).show();
+            String crashReport = getIntent().getStringExtra(CRASH_REPORT_EXTRA);
+            if (crashReport != null)
+            {
+                Toast.makeText(this, crashReport, Toast.LENGTH_LONG).show();
+            }
         }
 
         /*
@@ -115,7 +120,7 @@ public class MainActivity extends Activity {
 
         /*
         Init Audio Stream
-         */
+        */
         initAudioStream();
     }
 
