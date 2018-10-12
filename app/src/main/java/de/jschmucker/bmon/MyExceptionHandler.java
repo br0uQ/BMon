@@ -5,6 +5,7 @@ import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.util.Log;
 
 public class MyExceptionHandler implements Thread.UncaughtExceptionHandler {
 
@@ -15,6 +16,7 @@ public class MyExceptionHandler implements Thread.UncaughtExceptionHandler {
     }
     @Override
     public void uncaughtException(Thread thread, Throwable ex) {
+        Log.d(getClass().getSimpleName(), "Exception: " + ex.getMessage());
         Intent intent = new Intent(activity, MainActivity.class);
         intent.putExtra("crash", true);
         intent.putExtra(MainActivity.CRASH_REPORT_EXTRA,

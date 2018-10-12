@@ -47,17 +47,18 @@ public class AudioPlayerEventListener implements ExoPlayer.EventListener {
     @Override
     public void onPlayerStateChanged(boolean playWhenReady, int playbackState) {
         if ((playbackState == ExoPlayer.STATE_ENDED)
-                || (playbackState == ExoPlayer.STATE_IDLE))
+//                || (playbackState == ExoPlayer.STATE_IDLE))
+                )
         {
             String state = "";
             if (playbackState == ExoPlayer.STATE_ENDED)
             {
                 state = "STATE_ENDED";
             }
-            if (playbackState == ExoPlayer.STATE_IDLE)
-            {
-                state = "STATE_IDLE";
-            }
+//            if (playbackState == ExoPlayer.STATE_IDLE)
+//            {
+//                state = "STATE_IDLE";
+//            }
             restartApp("Audio Fehler: Player ist im Status: " + state);
         }
     }
@@ -66,7 +67,7 @@ public class AudioPlayerEventListener implements ExoPlayer.EventListener {
     public void onPlayerError(ExoPlaybackException error) {
         Log.d(getClass().getSimpleName(), "ExoPlaybackException");
         Log.d(getClass().getSimpleName(), error.toString());
-        restartApp(activity.getString(R.string.error_audio_connection));
+        restartApp("Audio Player Fehler: " + error.getMessage());
     }
 
     @Override
@@ -75,6 +76,7 @@ public class AudioPlayerEventListener implements ExoPlayer.EventListener {
     }
 
     private void restartApp(String crashReport) {
+        Log.d(getClass().getSimpleName(), "Restarting App - Crash report:\n" + crashReport);
         Intent intent = new Intent(activity, MainActivity.class);
         intent.putExtra("crash", true);
         intent.putExtra(MainActivity.CRASH_REPORT_EXTRA, crashReport);
