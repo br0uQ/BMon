@@ -53,7 +53,7 @@ public class MainActivity extends Activity {
 //    private String bmon_address = BMON_AP_IP;
 
     /* Audio */
-    private String audioUrl = "http://192.168.2.1:8000/raspi";
+    private String audioUrl = "http://192.168.2.1:8000/raspi.mp3";
     private SimpleExoPlayer player;
     private MediaSource audioSource;
 
